@@ -8,27 +8,16 @@ from datetime import datetime
 from time import strptime
 from collections import Counter
 
-#absolute dir the script is in
-script_dir = os.path.dirname(__file__) 
-
-#relative paths of input and output files
-relativeInputPath = "tweet_input/tweets.txt"
-relativeOutputPath = "tweet_output/ft2.txt"
-
-#absolute paths of input and output files
-inputFile = os.path.join(script_dir, relativeInputPath)
-outputFile = os.path.join(script_dir, relativeOutputPath)
-
-#dictionary to store timestamp-hashtaglist for every tweet
+#global dictionary. Key: created at timestamp of tweet, Value: hastags in tweet
 timeHashtagDictionary = dict()
 
-#List of edges in graph
+#global list for current edges in graph
 graphEdgesList = list()
 
 #function to format the JSON timestamp in datetime standard format
+#return: formated DTTM
 def formatDTTM(tweetCreateDTTM):
 	elements = tweetCreateDTTM.split(" ")
-	#print(elements)
 	year=int(elements[-1])
 	month=int(strptime(elements[1],'%b').tm_mon)
 	date=int(elements[2])
@@ -45,69 +34,61 @@ def isValidTimeDifference(timestamp1,timestamp2):
 		return True
 	return False
 
-#function to get hashtags and created timestamp from tweet
+#function to get hashtags and created timestamp from tweet data
+#return: list of hashtags in tweet and its create timestamp
 def getHashtagsAndCreateFields(inputText):
 	tweetHashtags = list()
 	tweetCreateDTTM = ""
 	jsonData = json.loads(inputText)
-	#print('abs')
 	if "entities" in jsonData and "created_at" in jsonData:
 		tweetEntities = jsonData["entities"]
 		if "hashtags" in tweetEntities:
 			hashtagList = tweetEntities["hashtags"]
 			tweetCreateDTTM = jsonData["created_at"]
 			if hashtagList:		
-				tweetHashtags = [ item['text'] for item in hashtagList]
+				tweetHashtags = [item['text'] for item in hashtagList]
 				tweetHashtags = [tag.lower() for tag in tweetHashtags]
 				tweetHashtags = list(set(tweetHashtags))
 				tweetCreateDTTM = formatDTTM(tweetCreateDTTM)
 	return tweetHashtags, tweetCreateDTTM
 
 #function to get all possible edges from a list of hashtags
+#return: a list of edges for input tweetHashtags
 def getEdges(tweetHashtags):
 	tweetHashtags = sorted(set(tweetHashtags))
 	return list(itertools.combinations(tweetHashtags, 2))
 
+#function to remove invalid edges from graph
+#return: updated graph
 def evictInvalidEdges():
 	global graphEdgesList
 	global timeHashtagDictionary
 	invalidTimestamps=[]
+	#find invalid timestamps
 	latestTimestamp = max(timeHashtagDictionary.keys())
 	originalTimestamps=timeHashtagDictionary.keys()
 	for timestamp in originalTimestamps:
 		if not isValidTimeDifference(timestamp,latestTimestamp):
+			#for each invalid tweet with respect to timestamp, find its edges and remove them from graph
 			invalidHashtagsList=timeHashtagDictionary[timestamp]
 			invalidEdges=getEdges(invalidHashtagsList)
-			#print("removing invalidEdges...")
-			#print(invalidEdges)
 			graphEdgesList=list(set(graphEdgesList)-set(invalidEdges))
 			invalidTimestamps.append(timestamp)
-	#print("invalidTimestamps")
-	#print(invalidTimestamps)
-	#print("before")
-	#print(timeHashtagDictionary)
+	#update global dictionary to store only the createDTTM and hashtags of valid tweets
 	timeHashtagDictionary = dict( (k, v) for k,v in timeHashtagDictionary.items() if k not in invalidTimestamps)
-	#print("after")
-	#print(timeHashtagDictionary)
 
 
-#function to add edges of new tweet's hashtags, remove invalid edges and calculate average degree of graph
+#function to add edges of new tweet's hashtags and remove invalid edges
+#return: updated graph with new edges added to it and old edges removed
 def updateGraph(tweetHashtags,tweetCreateDTTM):
 	global graphEdgesList
-	#print("tweetHashtags")
-	#print(tweetHashtags)
-	#print("tweetCreateDTTM")
-	#print(tweetCreateDTTM)
 	if len(tweetHashtags)>=2:
 		edges=getEdges(tweetHashtags)
-		#print("edges")
-		#print(edges)
 		graphEdgesList = list(set(graphEdgesList + edges))
-		#print("graphEdgesList")
-		#print(graphEdgesList)
 	evictInvalidEdges()
 
 #function to calculate the average degree of graph
+#return: average degree of node
 def calAvgDegreeOfGraph():	
 	global graphEdgesList
 	uniqueNodesInGraphList=list()
@@ -115,8 +96,10 @@ def calAvgDegreeOfGraph():
 	nodeDegreeDict=dict()
 	nodeDegreeList=list()
 	allNodesInEdges=list(itertools.chain(*graphEdgesList))
+	#find total nodes in graph
 	uniqueNodesInGraphList=list(set(allNodesInEdges))
 	totalNodesInGraph=len(uniqueNodesInGraphList)
+	#find sum of degrees of all nodes and average degree
 	nodeDegreeDict=Counter(allNodesInEdges)
 	nodeDegreeList=nodeDegreeDict.values()
 	sumNodeDegree=sum(nodeDegreeList)
@@ -124,26 +107,29 @@ def calAvgDegreeOfGraph():
 	return "%.2f" % avgDegree
 
 
-#function to read, clean escape and unicode characters and count tweets with unicode
-def processTweets(inputFile):
-	global timeHashtagDictionary
-	global graphEdgesList
+#driver function to read tweets and compute edges, graph and average degree of graph
+#return: output file in specified format
+def processTweets(inputFile,outputFile):
+	global timeHashtagDictionary	
+	global graphEdgesList 		
 	with open(inputFile, "r") as inFile, open(outputFile, "w") as outFile:
 		for line in inFile:
+			#for each tweet, compute and store hashtags and createDTTM, update graph with edges from new tweet's hashtags
+			#and calculate average degree of graph
 			tweetHashtags, tweetCreateDTTM = getHashtagsAndCreateFields(line)
-			#print(tweetHashtags)
-			#print(tweetCreateDTTM)
 			timeHashtagDictionary[tweetCreateDTTM]=tweetHashtags
 			updateGraph(tweetHashtags,tweetCreateDTTM)
 			avgDegree=calAvgDegreeOfGraph()
-			print(avgDegree)
-	print(graphEdgesList)
+			outFile.write(str(avgDegree)+'\n')
 
 #main() driver program
 def main():
-	global inputFile
-	global outputFile
-	processTweets(inputFile)
+	if len(sys.argv) != 3:
+		print ('usage: python3 ./src/average_degree.py ./tweet_input/tweets.txt ./tweet_output/ft2.txt')
+		sys.exit(1)
+	inputFile = sys.argv[1]
+	outputFile = sys.argv[2]
+	processTweets(inputFile,outputFile)
 
 if __name__ == '__main__':
 	main() 
