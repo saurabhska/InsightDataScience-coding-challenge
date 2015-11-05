@@ -59,6 +59,7 @@ def cleanCountUnicodeTweets(inputFile,outputFile):
 		for line in inFile:
 			#for each tweet get its cleaned text, createDTTM and write output in output format
 			tweetText, tweetCreateDTTM = getTextAndCreateFields(line)
+			#if tweetText:
 			outputString = getOutputString(tweetText,tweetCreateDTTM,0,0)
 			outFile.write(outputString)
 		outFile.write("\n")
