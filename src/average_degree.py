@@ -29,6 +29,10 @@ def formatDTTM(tweetCreateDTTM):
 
 #function to check if the time difference between timestamps is less than 60 seconds
 def isValidTimeDifference(timestamp1,timestamp2):
+	#print("timestamp1")
+	#print(timestamp1)
+	#print("timestamp2")
+	#print(timestamp2)
 	difference = (timestamp2-timestamp1).total_seconds()	
 	if difference < 60:
 		return True
@@ -44,11 +48,11 @@ def getHashtagsAndCreateFields(inputText):
 		tweetEntities = jsonData["entities"]
 		if "hashtags" in tweetEntities:
 			hashtagList = tweetEntities["hashtags"]
-			tweetCreateDTTM = jsonData["created_at"]
 			if hashtagList:		
 				tweetHashtags = [item['text'] for item in hashtagList]
 				tweetHashtags = [tag.lower() for tag in tweetHashtags]
 				tweetHashtags = list(set(tweetHashtags))
+				tweetCreateDTTM = jsonData["created_at"]
 				tweetCreateDTTM = formatDTTM(tweetCreateDTTM)
 	return tweetHashtags, tweetCreateDTTM
 
@@ -117,10 +121,11 @@ def processTweets(inputFile,outputFile):
 			#for each tweet, compute and store hashtags and createDTTM, update graph with edges from new tweet's hashtags
 			#and calculate average degree of graph
 			tweetHashtags, tweetCreateDTTM = getHashtagsAndCreateFields(line)
-			timeHashtagDictionary[tweetCreateDTTM]=tweetHashtags
-			updateGraph(tweetHashtags,tweetCreateDTTM)
-			avgDegree=calAvgDegreeOfGraph()
-			outFile.write(str(avgDegree)+'\n')
+			if tweetHashtags:		
+				timeHashtagDictionary[tweetCreateDTTM]=tweetHashtags
+				updateGraph(tweetHashtags,tweetCreateDTTM)
+				avgDegree=calAvgDegreeOfGraph()
+				outFile.write(str(avgDegree)+'\n')
 
 #main() driver program
 def main():
