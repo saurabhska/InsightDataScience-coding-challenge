@@ -44,7 +44,8 @@ def getHashtagsAndCreateFields(inputText):
 	tweetHashtags = list()
 	tweetCreateDTTM = ""
 	jsonData = json.loads(inputText)
-	if "entities" in jsonData and "created_at" in jsonData:
+	#take all hashtags, make them lower case and remove duplicates
+	if "entities" in jsonData:
 		tweetEntities = jsonData["entities"]
 		if "hashtags" in tweetEntities:
 			hashtagList = tweetEntities["hashtags"]
@@ -52,8 +53,10 @@ def getHashtagsAndCreateFields(inputText):
 				tweetHashtags = [item['text'] for item in hashtagList]
 				tweetHashtags = [tag.lower() for tag in tweetHashtags]
 				tweetHashtags = list(set(tweetHashtags))
-				tweetCreateDTTM = jsonData["created_at"]
-				tweetCreateDTTM = formatDTTM(tweetCreateDTTM)
+	#take created_at timestamp and convert into datetime format
+	if "created_at" in jsonData:
+		tweetCreateDTTM = jsonData["created_at"]
+		tweetCreateDTTM = formatDTTM(tweetCreateDTTM)
 	return tweetHashtags, tweetCreateDTTM
 
 #function to get all possible edges from a list of hashtags
@@ -107,9 +110,11 @@ def calAvgDegreeOfGraph():
 	nodeDegreeDict=Counter(allNodesInEdges)
 	nodeDegreeList=nodeDegreeDict.values()
 	sumNodeDegree=sum(nodeDegreeList)
-	avgDegree=sumNodeDegree/totalNodesInGraph
+	if totalNodesInGraph == 0:
+		avgDegree = 0
+	else:	
+		avgDegree=sumNodeDegree/totalNodesInGraph
 	return "%.2f" % avgDegree
-
 
 #driver function to read tweets and compute edges, graph and average degree of graph
 #return: output file in specified format
@@ -121,11 +126,11 @@ def processTweets(inputFile,outputFile):
 			#for each tweet, compute and store hashtags and createDTTM, update graph with edges from new tweet's hashtags
 			#and calculate average degree of graph
 			tweetHashtags, tweetCreateDTTM = getHashtagsAndCreateFields(line)
-			if tweetHashtags:		
-				timeHashtagDictionary[tweetCreateDTTM]=tweetHashtags
-				updateGraph(tweetHashtags,tweetCreateDTTM)
-				avgDegree=calAvgDegreeOfGraph()
-				outFile.write(str(avgDegree)+'\n')
+			#if there are hashtags in tweet, update the graph and record average degree in output file else do nothing	
+			timeHashtagDictionary[tweetCreateDTTM]=tweetHashtags
+			updateGraph(tweetHashtags,tweetCreateDTTM)
+			avgDegree=calAvgDegreeOfGraph()
+			outFile.write(str(avgDegree)+'\n')
 
 #main() driver program
 def main():
