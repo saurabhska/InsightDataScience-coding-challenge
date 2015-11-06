@@ -35,9 +35,10 @@ def getTextAndCreateFields(inputText):
 	tweetText=""
 	tweetCreateDTTM=""
 	jsonData = json.loads(inputText)
-	if "text" in jsonData and "created_at" in jsonData:
+	if "text" in jsonData:
 		tweetText = jsonData["text"]
 		tweetText = removeNonASCIIAndEscapes(tweetText)
+	if "created_at" in jsonData:
 		tweetCreateDTTM = jsonData["created_at"]
 	return tweetText, tweetCreateDTTM
 
@@ -52,14 +53,14 @@ def getOutputString(tweetText, tweetCreateDTTM,unicodeTweetCount,outputFlag):
 		return str(unicodeTweetCount) + " tweets contained unicode."
 	return None
 
-#function to read, clean escape and unicode characters and count tweets with unicode
+#function to read, clean escape sequences and unicode characters and count tweets with unicode
+#return : output file in required format
 def cleanCountUnicodeTweets(inputFile,outputFile):
 	global unicodeTweetCount
 	with open(inputFile, "r") as inFile, open(outputFile, "w") as outFile:
 		for line in inFile:
 			#for each tweet get its cleaned text, createDTTM and write output in output format
 			tweetText, tweetCreateDTTM = getTextAndCreateFields(line)
-			#if tweetText:
 			outputString = getOutputString(tweetText,tweetCreateDTTM,0,0)
 			outFile.write(outputString)
 		outFile.write("\n")
