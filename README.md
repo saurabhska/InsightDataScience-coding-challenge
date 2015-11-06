@@ -2,6 +2,9 @@ Insight Data Engineering - Coding Challenge
 ===========================================================
 
 Readme from : https://github.com/InsightDataScience/coding-challenge
+The code uses Python 3.4.3
+
+===========================================================
 
 For this coding challenge, you will develop tools that could help analyze the community of Twitter users.  For simplicity, the features we will build are primitive, but you could easily build more complicated features on top of these.   
 
