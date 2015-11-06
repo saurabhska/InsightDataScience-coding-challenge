@@ -29,10 +29,6 @@ def formatDTTM(tweetCreateDTTM):
 
 #function to check if the time difference between timestamps is less than 60 seconds
 def isValidTimeDifference(timestamp1,timestamp2):
-	#print("timestamp1")
-	#print(timestamp1)
-	#print("timestamp2")
-	#print(timestamp2)
 	difference = (timestamp2-timestamp1).total_seconds()	
 	if difference < 60:
 		return True
@@ -127,7 +123,8 @@ def processTweets(inputFile,outputFile):
 			#and calculate average degree of graph
 			tweetHashtags, tweetCreateDTTM = getHashtagsAndCreateFields(line)
 			#if there are hashtags in tweet, update the graph and record average degree in output file else do nothing	
-			timeHashtagDictionary[tweetCreateDTTM]=tweetHashtags
+			if tweetCreateDTTM:
+				timeHashtagDictionary[tweetCreateDTTM]=tweetHashtags
 			updateGraph(tweetHashtags,tweetCreateDTTM)
 			avgDegree=calAvgDegreeOfGraph()
 			outFile.write(str(avgDegree)+'\n')
